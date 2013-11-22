@@ -17,24 +17,28 @@ type State =
     createdAttachmentId = null
     }
  
-let ``the client has authenticated with OAuth 2.0`` state = async {
+let ``the client has authenticated with _`` authtype state = async {
   return {state with storage = Storage.JsonFileStorage.Default}
   }
 
-let ``the client has negotiated for "rest-1.v1" and "attachment.img" scopes`` state = async {
+let ``the client has negotiated for scope _`` scope state = async {
   return {state with httpClient = System.Net.Http.HttpClient.WithOAuth2("rest-1.v1 attachment.img", state.storage)}
   }
 
-let ``and a Member "remote" with Default Role "Customer" (or above)`` state = async {
+let ``a Member _ with Default Role _`` (membername, role) state = async {
   return {state with remoteMemberId = "" }
   }
 
-let ``I create a new Attachment asset with the following attributes`` state = async {
+let ``I create a new Attachment asset with the attributes`` attrs state = async {
   return {state with createdAttachmentId = ""}
   }
 
 let ``It creates`` (state:State) = async {
   let! result = Async.AwaitTask <| state.httpClient.GetStringAsync("")
   assert (result.Length > 0)
+  }
+
+let ``the client has authenticated with <authtype>`` state (authtype:string, endpoint:string) = async {
+  return {state with httpClient=state.httpClient}
   }
       

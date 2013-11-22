@@ -13,15 +13,16 @@ type Step<'TState> =
   | When of ('TState -> Async<'TState>)
   | Then of ('TState -> Async<unit>)
 
-type Action<'TState> =
+type Action<'TState, 'args> =
   | Background of Step<'TState> list
   | Scenario of string * Step<'TState> list
+  | ScenarioOutline of string * ('args -> Step<'TState> list) * 'args list
 
-type Feature<'TState> = {
+type Feature<'TState,'TArgs> = {
   Name : string
   Description : string
   InitialState : 'TState
-  Actions : Action<'TState> list
+  Actions : Action<'TState,'TArgs> list
   }
 
 let Feature (description:string) (state:'TState) actionlist =
@@ -34,3 +35,6 @@ let Feature (description:string) (state:'TState) actionlist =
 
 let Scenario name lst = Scenario (name, lst)
 
+let ScenarioOutline name stepfunc examples = ScenarioOutline(name, stepfunc, examples)
+
+let Examples list = list

@@ -2,37 +2,48 @@
 
 open FCuke
 
-let runStep step state =
+type RunState<'TArgs> = { args: 'TArgs }
+  with static member Default = {args=[]}
+
+let runStep step theirstate =
   match step with
-  | Given f -> f state
-  | When f -> f state
+  | Given f -> f theirstate
+  | When f -> f theirstate
   | Then t -> async {
-    do! t state
-    return state
+    do! t theirstate
+    return theirstate
     }
 
-let rec runSteps state steps = async {
+let rec runSteps theirstate steps = async {
     match steps with
-    | [] -> return state
+    | [] -> return theirstate
     | step::steps ->
-      let! newstate = runStep step state
-      return! runSteps newstate steps
+      let! theirstate = runStep step theirstate
+      return! runSteps theirstate steps
     }
 
-let rec runActions prevState actions = async {
+let rec runActions prevstate actions = async {
   match actions with
-    | [] -> return prevState
+    | [] -> return prevstate
     | action::moreActions -> 
       match action with
+
       | Background steps ->
-        let! stateWithBackground = runSteps prevState steps
-        return! runActions stateWithBackground moreActions
+        let! withBackgroundState = runSteps prevstate steps
+        return! runActions withBackgroundState moreActions
+
       | Scenario (name, steps) ->
-        let! endOfScenarioState = runSteps prevState steps
-        return! runActions prevState moreActions
+        let! afterScenarioState = runSteps prevstate steps
+        return! runActions prevstate moreActions
+
+      | ScenarioOutline (name, stepsOf, examples) ->
+        for ex in examples do
+          let! endstate = runSteps prevstate <| stepsOf ex
+          ignore endstate
+        return! runActions prevstate moreActions      
   }
 
-let runFeature (f:Feature<_>) = async {
+let runFeature (f:Feature<_,_>) = async {
   let! final = runActions f.InitialState f.Actions
   ignore final
   }
